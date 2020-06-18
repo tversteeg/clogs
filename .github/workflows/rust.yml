@@ -69,7 +69,7 @@ jobs:
       - name: create www dir
         run: |
           mkdir www
-          cp target/wasm32-unknown-unknown/release/examples/basic/*.wasm www
+          cp target/wasm32-unknown-unknown/release/examples/*.wasm www
           cp examples/*.html www
 
       - name: deploy to github pages

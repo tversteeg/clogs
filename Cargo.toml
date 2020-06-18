@@ -19,4 +19,4 @@ is-it-maintained-open-issues = { repository = "tversteeg/clogs" }
 anyhow = "1.0.31"
 glsp = "0.1.0"
 lyon = "0.15.8"
-miniquad = "0.2.55"
+miniquad = "0.3.0-alpha.9"
