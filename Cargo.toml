@@ -1,0 +1,22 @@
+[package]
+name = "clogs"
+version = "0.1.0"
+authors = ["Thomas Versteeg <thomasversteeg@gmx.com>"]
+license = "AGPL-3.0-or-later"
+edition = "2018"
+readme = "README.md"
+repository = "https://github.com/tversteeg/clogs"
+documentation = "https://docs.rs/clogs"
+description = "vector based game engine"
+keywords = []
+categories = []
+
+[badges]
+is-it-maintained-issue-resolution = { repository = "tversteeg/clogs" }
+is-it-maintained-open-issues = { repository = "tversteeg/clogs" }
+
+[dependencies]
+anyhow = "1.0.31"
+glsp = "0.1.0"
+lyon = "0.15.8"
+miniquad = "0.2.55"
