@@ -1,4 +1,5 @@
 use anyhow::Result;
+use smart_default::SmartDefault;
 use miniquad::{
     conf::{Conf, Loading},
     graphics::Context,
@@ -9,37 +10,50 @@ use miniquad::{
 ///
 /// ## Example
 ///
-/// #fn main() {
-/// let game = Clog::default()
-///     .width(800)
-///     .height(600);
+/// ```rust
+/// # fn main() {
+/// let game = Clog::new("Title of the game")
+///     .width(640)
+///     .height(480);
 ///
 /// game.start();
-/// #}
+/// # }
+/// ```
+#[derive(Debug, SmartDefault)]
 pub struct Clog {
     /// The window title of the game.
     title: String,
 
-    /// The window dimensions.
-    ///
-    /// Defaults to 800x600.
+    /// The window width dimension.
+    #[default = 800]
     width: i32,
+
+    /// The window height dimension.
+    #[default = 800]
     height: i32,
 
     /// How many MSAA samples are used for rendering the vector graphics.
     ///
     /// Defaults to 8 samples.
+    #[default = 8]
     sample_count: i32,
+
+    /// SVGs to load.
+    svgs: Vec<(String, String)>,
+
+    /// Fonts to load.
+    fonts: Vec<(String, String)>,
 }
 
 impl Clog {
     /// Setup a new game.
-    pub fn new(title: &str) -> Self {
+    pub fn new<T>(title: T) -> Self
+    where
+        T: Into<String>,
+    {
         Self {
-            title: title.to_string(),
-            width: 800,
-            height: 600,
-            sample_count: 8,
+            title: title.into(),
+            ..Default::default()
         }
     }
 
@@ -60,6 +74,21 @@ impl Clog {
     /// Set how many MSAA samples are used for rendering the vector graphics.
     pub fn sample_count(mut self, sample_count: i32) -> Self {
         self.sample_count = sample_count;
+
+        self
+    }
+
+    /// Add a SVG that will be uploaded to the GPU during the loading phase.
+    ///
+    /// The `reference_name` argument can be later used in scripts to create instances of the SVG
+    /// mesh.
+    /// The SVG format must not violate the [usvg limitations](https://github.com/RazrFalcon/resvg/tree/master/usvg#limitations).
+    pub fn load_svg<R, S>(mut self, reference_name: R, svg_source: S) -> Self
+    where
+        S: Into<String>,
+        R: Into<String>,
+    {
+        self.svgs.push((reference_name.into(), svg_source.into()));
 
         self
     }
