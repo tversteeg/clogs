@@ -6,28 +6,73 @@ use miniquad::{
 };
 
 /// The main game object.
+///
+/// ## Example
+///
+/// #fn main() {
+/// let game = Clog::default()
+///     .width(800)
+///     .height(600);
+///
+/// game.start();
+/// #}
 pub struct Clog {
-    /// The window width & height.
-    window_dimensions: (i32, i32),
+    /// The window title of the game.
+    title: String,
+
+    /// The window dimensions.
+    ///
+    /// Defaults to 800x600.
+    width: i32,
+    height: i32,
+
+    /// How many MSAA samples are used for rendering the vector graphics.
+    ///
+    /// Defaults to 8 samples.
+    sample_count: i32,
 }
 
 impl Clog {
     /// Setup a new game.
-    pub fn new(width: i32, height: i32) -> Result<Self> {
-        Ok(Self {
-            window_dimensions: (width, height),
-        })
+    pub fn new(title: &str) -> Self {
+        Self {
+            title: title.to_string(),
+            width: 800,
+            height: 600,
+            sample_count: 8,
+        }
+    }
+
+    /// Set the initial window width.
+    pub fn width(mut self, width: i32) -> Self {
+        self.width = width;
+
+        self
+    }
+
+    /// Set the initial window height.
+    pub fn height(mut self, height: i32) -> Self {
+        self.height = height;
+
+        self
+    }
+
+    /// Set how many MSAA samples are used for rendering the vector graphics.
+    pub fn sample_count(mut self, sample_count: i32) -> Self {
+        self.sample_count = sample_count;
+
+        self
     }
 
     /// Start the game.
     pub fn start(self) {
         miniquad::start(
             Conf {
-                window_title: concat!("clog - ", env!("CARGO_PKG_VERSION")).to_string(),
-                window_width: self.window_dimensions.0,
-                window_height: self.window_dimensions.1,
+                window_title: self.title.clone(),
+                window_width: self.width,
+                window_height: self.height,
                 loading: Loading::Embedded,
-                sample_count: 8,
+                sample_count: self.sample_count,
                 ..Default::default()
             },
             |ctx| UserData::owning(self, ctx),
@@ -36,11 +81,7 @@ impl Clog {
 }
 
 impl EventHandler for Clog {
-    fn update(&mut self, _: &mut Context) {
-        todo!()
-    }
+    fn update(&mut self, _: &mut Context) {}
 
-    fn draw(&mut self, _: &mut Context) {
-        todo!()
-    }
+    fn draw(&mut self, _: &mut Context) {}
 }
