@@ -1,16 +1,17 @@
-use anyhow::Result;
-use smart_default::SmartDefault;
+use glsp::{GSend, Runtime, GFn, Root, Val};
 use miniquad::{
     conf::{Conf, Loading},
     graphics::Context,
     EventHandler, UserData,
 };
+use smart_default::SmartDefault;
 
 /// The main game object.
 ///
 /// ## Example
 ///
 /// ```rust
+/// use clogs::Clog;
 /// # fn main() {
 /// let game = Clog::new("Title of the game")
 ///     .width(640)
@@ -19,10 +20,14 @@ use miniquad::{
 /// game.start();
 /// # }
 /// ```
-#[derive(Debug, SmartDefault)]
+#[derive(SmartDefault)]
 pub struct Clog {
     /// The window title of the game.
     title: String,
+
+    /// The GameLisp runtime.
+    #[default(Runtime::new())]
+    runtime: Runtime,
 
     /// The window width dimension.
     #[default = 800]
@@ -33,8 +38,6 @@ pub struct Clog {
     height: i32,
 
     /// How many MSAA samples are used for rendering the vector graphics.
-    ///
-    /// Defaults to 8 samples.
     #[default = 8]
     sample_count: i32,
 
@@ -53,8 +56,30 @@ impl Clog {
     {
         Self {
             title: title.into(),
+            runtime: Runtime::new(),
             ..Default::default()
         }
+    }
+
+    /// The main script of the game.
+    ///
+    /// Must be a GameLisp file containing the following functions:
+    ///
+    /// ```gamelisp
+    /// engine:update
+    /// engine:render
+    /// ```
+    pub fn main_script<S>(self, script: S) -> Self
+    where
+        S: AsRef<str> + GSend,
+    {
+        self.runtime.run(|| {
+            glsp::eval_multi(&glsp::parse_all(script.as_ref(), None)?, None)?;
+
+            Ok(())
+        });
+
+        self
     }
 
     /// Set the initial window width.
@@ -107,10 +132,43 @@ impl Clog {
             |ctx| UserData::owning(self, ctx),
         );
     }
+
+    /// Run a GameLisp function.
+    pub fn call(&self, function: &str) -> bool {
+        struct RuntimeResult(bool);
+
+        let result: RuntimeResult = self
+            .runtime
+            .run(|| {
+                let update_func: Root<GFn> = match glsp::global(function) {
+                    Ok(Val::GFn(update)) => update,
+                    Ok(val) => {
+                        eprintln!("invalid {} function: {}", function, val);
+
+                        return Ok(RuntimeResult(false));
+                    }
+                    Err(err) => {
+                        eprintln!("error finding {} function: {}", function, err);
+
+                        return Ok(RuntimeResult(false));
+                    }
+                };
+                let _: Val = glsp::call(&update_func, &())?;
+
+                Ok(RuntimeResult(true))
+            })
+            .expect("Something unexpected went wrong with calling a GameLisp function");
+
+        result.0
+    }
 }
 
 impl EventHandler for Clog {
-    fn update(&mut self, _: &mut Context) {}
+    fn update(&mut self, _: &mut Context) {
+        self.call("engine:update");
+    }
 
-    fn draw(&mut self, _: &mut Context) {}
+    fn draw(&mut self, _: &mut Context) {
+        self.call("engine:render");
+    }
 }
