@@ -1,4 +1,5 @@
-use glsp::{GSend, Runtime, GFn, Root, Val};
+use anyhow::{anyhow, Result};
+use glsp::{GFn, GSend, Root, Runtime, Val};
 use miniquad::{
     conf::{Conf, Loading},
     graphics::Context,
@@ -69,17 +70,39 @@ impl Clog {
     /// engine:update
     /// engine:render
     /// ```
-    pub fn main_script<S>(self, script: S) -> Self
+    pub fn main_script<S>(self, script: S) -> Result<Self>
     where
         S: AsRef<str> + GSend,
     {
-        self.runtime.run(|| {
-            glsp::eval_multi(&glsp::parse_all(script.as_ref(), None)?, None)?;
+        struct LoadingResult {
+            has_update: bool,
+            has_render: bool,
+        };
+        let result: LoadingResult = self
+            .runtime
+            .run(|| {
+                // Execute the main lisp script
+                glsp::eval_multi(&glsp::parse_all(script.as_ref(), None)?, None)?;
 
-            Ok(())
-        });
+                // Check if the required functions are loaded
+                Ok(LoadingResult {
+                    has_update: Self::has_function("engine:update"),
+                    has_render: Self::has_function("engine:render"),
+                })
+            })
+            .ok_or(anyhow!("executing main script failed"))?;
 
-        self
+        if !result.has_update {
+            Err(anyhow!(
+                "function 'engine:update' is missing from main script"
+            ))
+        } else if !result.has_render {
+            Err(anyhow!(
+                "function 'engine:render' is missing from main script"
+            ))
+        } else {
+            Ok(self)
+        }
     }
 
     /// Set the initial window width.
@@ -160,6 +183,14 @@ impl Clog {
             .expect("Something unexpected went wrong with calling a GameLisp function");
 
         result.0
+    }
+
+    /// Check if a GLSP function is defined.
+    fn has_function(function_name: &str) -> bool {
+        match glsp::global(function_name) {
+            Ok(Val::GFn(_)) => true,
+            _ => false,
+        }
     }
 }
 

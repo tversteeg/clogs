@@ -10,6 +10,7 @@ documentation = "https://docs.rs/clogs"
 description = "vector based game engine"
 keywords = []
 categories = []
+include = ["src/lib.rs", "LICENSE", "README.md"]
 
 [badges]
 is-it-maintained-issue-resolution = { repository = "tversteeg/clogs" }
