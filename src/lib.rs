@@ -1,3 +1,6 @@
+mod render;
+
+use crate::render::Render;
 use anyhow::{anyhow, Result};
 use glsp::{GFn, GSend, Root, Runtime, Val};
 use miniquad::{
@@ -18,7 +21,7 @@ use smart_default::SmartDefault;
 ///     .width(640)
 ///     .height(480);
 ///
-/// game.start();
+/// // game.start();
 /// # }
 /// ```
 #[derive(SmartDefault)]
@@ -152,12 +155,39 @@ impl Clog {
                 sample_count: self.sample_count,
                 ..Default::default()
             },
-            |ctx| UserData::owning(self, ctx),
+            |mut ctx| UserData::owning(ClogRun::new(&mut ctx, self.runtime), ctx),
         );
     }
 
+    /// Check if a GLSP function is defined.
+    fn has_function(function_name: &str) -> bool {
+        match glsp::global(function_name) {
+            Ok(Val::GFn(_)) => true,
+            _ => false,
+        }
+    }
+}
+
+/// The actual game runtime.
+struct ClogRun {
+    /// The GameLisp runtime.
+    runtime: Runtime,
+
+    /// The render system.
+    render: Render,
+}
+
+impl ClogRun {
+    /// Create a new runtime.
+    pub fn new(ctx: &mut Context, runtime: Runtime) -> Self {
+        Self {
+            runtime,
+            render: Render::new(ctx),
+        }
+    }
+
     /// Run a GameLisp function.
-    pub fn call(&self, function: &str) -> bool {
+    fn call(&self, function: &str) -> bool {
         struct RuntimeResult(bool);
 
         let result: RuntimeResult = self
@@ -184,17 +214,9 @@ impl Clog {
 
         result.0
     }
-
-    /// Check if a GLSP function is defined.
-    fn has_function(function_name: &str) -> bool {
-        match glsp::global(function_name) {
-            Ok(Val::GFn(_)) => true,
-            _ => false,
-        }
-    }
 }
 
-impl EventHandler for Clog {
+impl EventHandler for ClogRun {
     fn update(&mut self, _: &mut Context) {
         self.call("engine:update");
     }

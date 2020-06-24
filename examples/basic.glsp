@@ -1,0 +1,5 @@
+(defn engine:update ()
+	(prn "update"))
+
+(defn engine:render ()
+	(prn "render"))
